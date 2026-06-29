@@ -115,10 +115,13 @@ export function getUICode() {
     function showAddModal() {
       showModal('secretModal', () => {
         editingId = null;
+        const secretKeyInput = document.getElementById('secretKey');
         document.getElementById('modalTitle').textContent = '添加新密钥';
         document.getElementById('submitBtn').textContent = '保存';
         document.getElementById('secretForm').reset();
         document.getElementById('secretId').value = '';
+        secretKeyInput.readOnly = false;
+        secretKeyInput.classList.remove('readonly-secret-key');
       });
     }
 
@@ -126,6 +129,11 @@ export function getUICode() {
     function hideSecretModal() {
       const modal = document.getElementById('secretModal');
       if (!modal || !modal.classList.contains('show')) return;
+      const secretKeyInput = document.getElementById('secretKey');
+      if (secretKeyInput) {
+        secretKeyInput.readOnly = false;
+        secretKeyInput.classList.remove('readonly-secret-key');
+      }
       modal.classList.remove('show');
       setTimeout(() => modal.style.display = 'none', 300);
       enableBodyScroll();

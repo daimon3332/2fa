@@ -2,7 +2,176 @@
  * 组件样式模块
  */
 export function getComponentStyles() {
-	return `    .secrets-list {
+	return `    .quick-2fa-section {
+      margin-bottom: 24px;
+    }
+
+    .quick-2fa-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--card-shadow);
+      padding: 22px;
+    }
+
+    .quick-2fa-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .quick-2fa-header h2 {
+      color: var(--text-primary);
+      font-size: 22px;
+      line-height: 1.2;
+      margin: 0 0 6px 0;
+    }
+
+    .quick-2fa-header p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .quick-2fa-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .quick-2fa-input {
+      width: 100%;
+      height: 48px;
+      border: 2px solid var(--border-primary);
+      border-radius: var(--radius-sm);
+      background: var(--input-bg);
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: monospace;
+      padding: 0 14px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .quick-2fa-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.14);
+    }
+
+    .readonly-secret-key {
+      color: var(--text-secondary);
+      cursor: not-allowed;
+      background: var(--bg-secondary) !important;
+    }
+
+    .quick-2fa-btn {
+      height: 48px;
+      white-space: nowrap;
+    }
+
+    .quick-2fa-result {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+    }
+
+    .quick-2fa-result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .quick-2fa-code {
+      color: var(--text-primary);
+      font-family: monospace;
+      font-size: 30px;
+      letter-spacing: 8px;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .quick-2fa-secret {
+      color: var(--text-secondary);
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      word-break: break-all;
+      margin-top: 8px;
+    }
+
+    .quick-2fa-history {
+      margin-top: 16px;
+    }
+
+    .quick-2fa-history-title {
+      color: var(--text-primary);
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .quick-2fa-history-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .quick-2fa-history-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+
+    .quick-2fa-history-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .quick-2fa-history-code {
+      color: var(--text-primary);
+      font-family: monospace;
+      font-size: 26px;
+      letter-spacing: 6px;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .quick-2fa-history-secret {
+      color: var(--text-secondary);
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+
+    @media (max-width: 768px) {
+      .quick-2fa-panel {
+        padding: 16px;
+      }
+
+      .quick-2fa-form {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-2fa-code,
+      .quick-2fa-history-code {
+        font-size: 24px;
+        letter-spacing: 5px;
+      }
+    }
+
+    .secrets-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 10px;

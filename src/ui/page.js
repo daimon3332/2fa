@@ -108,6 +108,33 @@ function getHTMLBody() {
 <body>
   <div class="container">
     <div class="content">
+      <div class="quick-2fa-section">
+        <div class="quick-2fa-panel">
+          <div class="quick-2fa-header">
+            <div>
+              <h2>临时 2FA 验证</h2>
+              <p>直接输入单个 Base32 密钥，快速生成验证码</p>
+            </div>
+          </div>
+          <div class="quick-2fa-form">
+            <input type="text"
+                   id="quick2FAInput"
+                   class="quick-2fa-input"
+                   placeholder="在这里输入完整的 2FA Base32 密钥"
+                   autocomplete="off"
+                   autocorrect="off"
+                   autocapitalize="characters"
+                   spellcheck="false"
+                   onkeydown="blockQuick2FAMultiline(event)"
+                   onpaste="handleQuick2FAPaste(event)">
+            <button type="button" class="btn btn-primary quick-2fa-btn" onclick="generateQuick2FA()">获取验证码</button>
+            <button type="button" class="btn btn-secondary quick-2fa-btn" onclick="saveQuick2FAInput()">保存</button>
+          </div>
+          <div id="quick2FAResult" class="quick-2fa-result" style="display: none;"></div>
+          <div id="quick2FAHistory" class="quick-2fa-history" style="display: none;"></div>
+        </div>
+      </div>
+
       <div class="search-section">
         <div class="search-container">
           <!-- 防止浏览器自动填充的隐藏输入框 -->

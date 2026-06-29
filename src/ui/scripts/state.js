@@ -20,6 +20,9 @@ export function getStateCode() {
     let debugMode = false;
     let currentSearchQuery = '';
     let filteredSecrets = [];
+    let quick2FAHistory = [];
+    let currentQuick2FASecret = '';
+    let quick2FAInterval = null;
     let saveQueue = Promise.resolve(); // 保存操作队列，确保串行执行避免并发覆盖
     // authToken 已移除 - 现在使用 HttpOnly Cookie
 

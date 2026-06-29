@@ -100,6 +100,7 @@ export function getCoreCode() {
           // Cookie 过期由浏览器自动管理，无需定时检查
         }
         initTheme();
+        initQuick2FA();
         
         // 恢复用户的排序选择
         restoreSortPreference();
@@ -119,6 +120,210 @@ export function getCoreCode() {
           }
         }, 500);
       });
+
+    const QUICK_2FA_HISTORY_KEY = '2fa-quick-history';
+    const QUICK_2FA_LIMIT = 10;
+
+    function normalizeQuick2FASecret(value) {
+      return String(value || '').replace(/\\s+/g, '').toUpperCase();
+    }
+
+    function blockQuick2FAMultiline(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        generateQuick2FA();
+      }
+    }
+
+    function handleQuick2FAPaste(event) {
+      const text = (event.clipboardData || window.clipboardData).getData('text');
+      const normalized = normalizeQuick2FASecret(text.split(/[\\r\\n]+/)[0]);
+      if (!normalized) return;
+      event.preventDefault();
+      const input = document.getElementById('quick2FAInput');
+      if (input) input.value = normalized;
+    }
+
+    function getQuick2FASecretObject(secret) {
+      return {
+        id: 'quick-' + secret,
+        name: '临时 2FA',
+        secret,
+        type: 'TOTP',
+        digits: 6,
+        period: 30,
+        algorithm: 'SHA1',
+        counter: 0
+      };
+    }
+
+    function loadQuick2FAHistory() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(QUICK_2FA_HISTORY_KEY) || '[]');
+        quick2FAHistory = Array.isArray(saved)
+          ? saved.map(normalizeQuick2FASecret).filter(validateBase32).slice(0, QUICK_2FA_LIMIT)
+          : [];
+      } catch (error) {
+        console.warn('读取临时 2FA 记录失败:', error);
+        quick2FAHistory = [];
+      }
+    }
+
+    function persistQuick2FAHistory() {
+      try {
+        localStorage.setItem(QUICK_2FA_HISTORY_KEY, JSON.stringify(quick2FAHistory.slice(0, QUICK_2FA_LIMIT)));
+      } catch (error) {
+        console.warn('保存临时 2FA 记录失败:', error);
+      }
+    }
+
+    function addQuick2FAHistory(secret) {
+      quick2FAHistory = [secret, ...quick2FAHistory.filter(item => item !== secret)].slice(0, QUICK_2FA_LIMIT);
+      persistQuick2FAHistory();
+    }
+
+    async function getQuick2FAToken(secret) {
+      return await otpCalculator.calculateCurrentOTP(getQuick2FASecretObject(secret));
+    }
+
+    function getQuick2FARemaining() {
+      return otpCalculator.getRemainingTime(30);
+    }
+
+    async function generateQuick2FA() {
+      const input = document.getElementById('quick2FAInput');
+      const secret = normalizeQuick2FASecret(input ? input.value : '');
+
+      if (!secret) {
+        showCenterToast('❌', '请输入 2FA 密钥');
+        return;
+      }
+
+      if (!validateBase32(secret)) {
+        showCenterToast('❌', '请输入有效的 Base32 密钥');
+        return;
+      }
+
+      if (input) input.value = secret;
+      currentQuick2FASecret = secret;
+      addQuick2FAHistory(secret);
+      await renderQuick2FAResult(secret);
+      await renderQuick2FAHistory();
+      startQuick2FAInterval();
+    }
+
+    function saveQuick2FAInput() {
+      const input = document.getElementById('quick2FAInput');
+      const secret = normalizeQuick2FASecret(input ? input.value : '');
+
+      if (!secret || !validateBase32(secret)) {
+        showCenterToast('❌', '请输入有效的 Base32 密钥');
+        return;
+      }
+
+      addQuick2FAHistory(secret);
+      renderQuick2FAHistory();
+      openQuick2FASaveModal(secret);
+    }
+
+    async function renderQuick2FAResult(secret) {
+      const result = document.getElementById('quick2FAResult');
+      if (!result) return;
+
+      const token = await getQuick2FAToken(secret);
+      result.style.display = 'block';
+      result.innerHTML =
+        '<div class="quick-2fa-result-row">' +
+          '<div>' +
+            '<div class="quick-2fa-code" onclick="copyQuick2FAToken(&quot;' + token + '&quot;)" title="点击复制验证码">' + token + '</div>' +
+            '<div class="quick-2fa-secret">' + escapeHTML(secret) + '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-secondary" onclick="openQuick2FASaveModal(&quot;' + secret + '&quot;)">保存</button>' +
+        '</div>' +
+        '<div class="quick-2fa-secret">剩余 ' + getQuick2FARemaining() + ' 秒自动刷新</div>';
+    }
+
+    async function renderQuick2FAHistory() {
+      const container = document.getElementById('quick2FAHistory');
+      if (!container) return;
+
+      if (!quick2FAHistory.length) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+
+      const rows = await Promise.all(quick2FAHistory.map(async secret => {
+        const token = await getQuick2FAToken(secret);
+        return '<div class="quick-2fa-history-card">' +
+          '<div class="quick-2fa-history-main">' +
+            '<div class="quick-2fa-history-code" onclick="copyQuick2FAToken(&quot;' + token + '&quot;)" title="点击复制验证码">' + token + '</div>' +
+            '<button type="button" class="btn btn-secondary" onclick="openQuick2FASaveModal(&quot;' + secret + '&quot;)">保存</button>' +
+          '</div>' +
+          '<div class="quick-2fa-history-secret">' + escapeHTML(secret) + '</div>' +
+        '</div>';
+      }));
+
+      container.style.display = 'block';
+      container.innerHTML =
+        '<div class="quick-2fa-history-title">最近 10 个临时 2FA</div>' +
+        '<div class="quick-2fa-history-list">' + rows.join('') + '</div>';
+    }
+
+    function startQuick2FAInterval() {
+      if (quick2FAInterval) return;
+      quick2FAInterval = setInterval(async () => {
+        if (currentQuick2FASecret) {
+          await renderQuick2FAResult(currentQuick2FASecret);
+        }
+        await renderQuick2FAHistory();
+      }, 1000);
+    }
+
+    function initQuick2FA() {
+      loadQuick2FAHistory();
+      renderQuick2FAHistory();
+      if (quick2FAHistory.length) {
+        startQuick2FAInterval();
+      }
+    }
+
+    async function copyQuick2FAToken(token) {
+      if (!token || token === '------') return;
+
+      try {
+        await navigator.clipboard.writeText(token);
+      } catch (err) {
+        const textArea = document.createElement('textarea');
+        textArea.value = token;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      showCenterToast('✅', '验证码已复制到剪贴板');
+    }
+
+    function openQuick2FASaveModal(secret) {
+      const normalized = normalizeQuick2FASecret(secret);
+      if (!validateBase32(normalized)) {
+        showCenterToast('❌', '请输入有效的 Base32 密钥');
+        return;
+      }
+
+      showAddModal();
+      const keyInput = document.getElementById('secretKey');
+      keyInput.value = normalized;
+      keyInput.readOnly = true;
+      keyInput.classList.add('readonly-secret-key');
+      document.getElementById('secretType').value = 'TOTP';
+      document.getElementById('secretDigits').value = '6';
+      document.getElementById('secretPeriod').value = '30';
+      document.getElementById('secretAlgorithm').value = 'SHA1';
+      document.getElementById('secretCounter').value = '0';
+      document.getElementById('showAdvanced').checked = false;
+      toggleAdvancedOptions();
+    }
 
     // 加载密钥列表
     async function loadSecrets() {
@@ -508,7 +713,10 @@ export function getCoreCode() {
       document.getElementById('secretId').value = id;
       document.getElementById('secretName').value = secret.name;
       document.getElementById('secretService').value = secret.account || '';
-      document.getElementById('secretKey').value = secret.secret;
+      const secretKeyInput = document.getElementById('secretKey');
+      secretKeyInput.value = secret.secret;
+      secretKeyInput.readOnly = false;
+      secretKeyInput.classList.remove('readonly-secret-key');
       
       // 填充高级参数
       document.getElementById('secretType').value = secret.type || 'TOTP';
